@@ -142,6 +142,42 @@ export function Posts() {
     setEditCommentIndex((editCommentIndex = -1));
   };
 
+  const likeInCommentSave = async (item, main_item) => {
+    let like_object = {
+      comment_in_post_id:item.id,
+      user_id: user.id
+    }
+    if (item.liked === 1) {
+      like_object.unlike = 1;
+    }
+    await callApi.postApi("/like-in-comment/store", like_object)
+    setPosts((prevState) => {
+      const newState = prevState.map((obj) => {
+        if (obj.id === main_item.id) {
+          let newComments = obj.comments.map((a) => {
+            if (a.id === item.id) {
+              if (item.liked === 1){
+                return {
+                  ...a, liked: 0, number_of_likes: a.number_of_likes - 1
+                }
+              }else{
+                return {
+                  ...a, liked: 1, number_of_likes: a.number_of_likes + 1
+                }
+              }
+            }
+            return a;
+          });
+          return { ...obj, comments: newComments };
+        }
+        return obj;
+      });
+
+      return newState;
+    });
+    
+  }
+
   useEffect(() => {
     setUser((user = JSON.parse(localStorage.getItem("user"))));
     getPost();
@@ -265,7 +301,6 @@ export function Posts() {
                         <></>
                       )}
                       <Button onClick={() => makeLikeInPost(item)}>
-                        {" "}
                         {item.liked && item.liked === 1 ? (
                           "Liked"
                         ) : (
@@ -317,11 +352,21 @@ export function Posts() {
                               ) : (
                                 <>
                                   <p>{i.comment} </p>
+                                  <p>{i.number_of_likes} People liked this comment</p>
                                 </>
                               )}
                               <p>{moment(i.created_at).fromNow()}</p>
                               <hr />
-                              <Button><LikeOutlined /></Button>
+                              <Button onClick={() => likeInCommentSave(i,item)}>
+                                {i.liked && i.liked === 1 ? (
+                                  "Liked"
+                                ) : (
+                                  <>
+                                    <LikeOutlined />
+                                  </>
+                                )}
+                              </Button>
+                              
                               {i.user_id === user.id ? (
                                 <>
                                   <Space wrap>
